@@ -9,12 +9,14 @@ import { Team, TeamMember, TeamRole } from '@/types/team';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { PageLoading } from '@/components/ui/loading';
+import { AppHeader } from '@/components/layout/app-header';
+import { getErrorMessage } from '@/lib/utils/error';
 
 export default function TeamDetailPage() {
   const router = useRouter();
   const params = useParams();
   const teamId = params.id as string;
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
 
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -92,9 +94,8 @@ export default function TeamDetailPage() {
       setNewMemberEmail('');
       setNewMemberRole(TeamRole.MEMBER);
       setShowAddMemberModal(false);
-    } catch (err: unknown) {
-      const error = err as { error?: { message?: string } };
-      setError(error.error?.message || 'Failed to add member');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to add member'));
     }
   };
 
@@ -107,11 +108,6 @@ export default function TeamDetailPage() {
     } catch (err) {
       console.error('Failed to remove member:', err);
     }
-  };
-
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
   };
 
   const getRoleVariant = (role: TeamRole): 'primary' | 'success' | 'default' => {
@@ -148,39 +144,7 @@ export default function TeamDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-6">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">TodoList</h1>
-            <nav className="flex gap-4">
-              <Link
-                href="/tasks"
-                className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              >
-                Tasks
-              </Link>
-              <Link
-                href="/teams"
-                className="text-blue-600 dark:text-blue-400 font-medium"
-              >
-                Teams
-              </Link>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              {user?.name || user?.email}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="text-sm text-red-600 hover:text-red-700 dark:text-red-400"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader activeNav="teams" />
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Breadcrumb */}

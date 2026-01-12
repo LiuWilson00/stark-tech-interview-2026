@@ -1,19 +1,20 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTeams, useCreateTeam, useTeamMembers } from '@/hooks/use-teams';
+import { getErrorMessage } from '@/lib/utils/error';
 import { tasksApi } from '@/lib/api/tasks';
 import { Task, TaskStatus, TaskPriority, TaskView, CreateTaskRequest } from '@/types/task';
 import { Team } from '@/types/team';
-import { Badge, getStatusVariant, getPriorityVariant } from '@/components/ui/badge';
 import { TaskFilters, SortField, SortOrder } from '@/components/tasks/task-filters';
+import { TaskCard } from '@/components/tasks/task-card';
+import { AppHeader } from '@/components/layout/app-header';
 
 export default function TasksPage() {
   const router = useRouter();
-  const { user, logout, isAuthenticated } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const { data: teams, isLoading: teamsLoading } = useTeams();
   const createTeamMutation = useCreateTeam();
 
@@ -42,19 +43,6 @@ export default function TasksPage() {
   const [creatorId, setCreatorId] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-
-  // Close user menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -173,14 +161,8 @@ export default function TasksPage() {
       setNewTaskDescription('');
       setNewTaskPriority(TaskPriority.MEDIUM);
       setShowTaskForm(false);
-    } catch (err: unknown) {
-      const error = err as { error?: { message?: string | string[] } };
-      const message = error.error?.message;
-      if (Array.isArray(message)) {
-        setError(message.join(', '));
-      } else {
-        setError(message || 'Failed to create task');
-      }
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to create task'));
     }
   };
 
@@ -201,9 +183,8 @@ export default function TasksPage() {
       setNewTeamName('');
       setNewTeamDescription('');
       setShowTeamForm(false);
-    } catch (err: unknown) {
-      const error = err as { error?: { message?: string } };
-      setError(error.error?.message || 'Failed to create team');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to create team'));
     }
   };
 
@@ -229,11 +210,6 @@ export default function TasksPage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
-
   const handleClearFilters = () => {
     setStatusFilter('all');
     setPriorityFilter('all');
@@ -244,106 +220,13 @@ export default function TasksPage() {
     setAssigneeId('');
   };
 
-  const getPriorityColor = (priority: TaskPriority) => {
-    switch (priority) {
-      case TaskPriority.URGENT: return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case TaskPriority.HIGH: return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-      case TaskPriority.MEDIUM: return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case TaskPriority.LOW: return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-    }
-  };
-
-  const getStatusColor = (status: TaskStatus) => {
-    switch (status) {
-      case TaskStatus.COMPLETED: return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case TaskStatus.IN_PROGRESS: return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case TaskStatus.PENDING: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   if (!isAuthenticated) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-6">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">TodoList</h1>
-            <nav className="flex gap-4">
-              <Link
-                href="/tasks"
-                className="text-blue-600 dark:text-blue-400 font-medium"
-              >
-                Tasks
-              </Link>
-              <Link
-                href="/teams"
-                className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              >
-                Teams
-              </Link>
-            </nav>
-          </div>
-          <div className="relative" ref={userMenuRef}>
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                {user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?'}
-              </div>
-              <span>{user?.name || user?.email}</span>
-              <svg className={`w-4 h-4 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 py-1 z-50">
-                <Link
-                  href="/profile"
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  Profile
-                </Link>
-                <Link
-                  href="/settings"
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Settings
-                </Link>
-                <hr className="my-1 border-gray-200 dark:border-gray-700" />
-                <button
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    handleLogout();
-                  }}
-                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
+      <AppHeader activeNav="tasks" />
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex gap-6">
@@ -638,63 +521,12 @@ export default function TasksPage() {
                   </div>
                 ) : (
                   filteredTasks.map((task) => (
-                    <div
+                    <TaskCard
                       key={task.id}
-                      className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-start gap-4"
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCompleteTask(task.id);
-                        }}
-                        disabled={task.status === TaskStatus.COMPLETED}
-                        className={`mt-1 w-5 h-5 rounded-full border-2 flex-shrink-0 ${
-                          task.status === TaskStatus.COMPLETED
-                            ? 'bg-green-500 border-green-500 text-white'
-                            : 'border-gray-300 hover:border-green-500'
-                        }`}
-                      >
-                        {task.status === TaskStatus.COMPLETED && (
-                          <svg className="w-full h-full" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </button>
-                      <Link href={`/tasks/${task.id}`} className="flex-1 min-w-0 cursor-pointer">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className={`font-medium ${
-                            task.status === TaskStatus.COMPLETED
-                              ? 'text-gray-400 line-through'
-                              : 'text-gray-900 dark:text-white'
-                          }`}>
-                            {task.title}
-                          </h3>
-                          <Badge variant={getPriorityVariant(task.priority)}>
-                            {task.priority}
-                          </Badge>
-                          <Badge variant={getStatusVariant(task.status)}>
-                            {task.status}
-                          </Badge>
-                        </div>
-                        {task.description && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                            {task.description}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-400 mt-1">
-                          Created {new Date(task.createdAt).toLocaleDateString()}
-                        </p>
-                      </Link>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteTask(task.id);
-                        }}
-                        className="text-red-500 hover:text-red-700 text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                      task={task}
+                      onComplete={handleCompleteTask}
+                      onDelete={handleDeleteTask}
+                    />
                   ))
                 )}
               </div>
