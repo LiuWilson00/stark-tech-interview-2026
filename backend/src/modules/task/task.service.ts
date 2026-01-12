@@ -76,11 +76,11 @@ export class TaskService {
     }
 
     if (startDate) {
-      qb.andWhere('task.dueDate >= :startDate', { startDate });
+      qb.andWhere('task.createdAt >= :startDate', { startDate });
     }
 
     if (endDate) {
-      qb.andWhere('task.dueDate <= :endDate', { endDate });
+      qb.andWhere('task.createdAt <= :endDate', { endDate });
     }
 
     // Handle sorting
