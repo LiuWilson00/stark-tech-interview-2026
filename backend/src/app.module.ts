@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
+import { ClassSerializerInterceptor } from '@nestjs/common';
 
 import { appConfig, authConfig, databaseConfig, jwtConfig } from './config';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -63,6 +64,11 @@ import { HistoryModule } from './modules/history/history.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    // Global serializer (excludes @Exclude() fields like passwordHash)
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor,
     },
     // Global response transformer
     {

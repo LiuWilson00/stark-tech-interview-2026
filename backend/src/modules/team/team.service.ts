@@ -117,7 +117,13 @@ export class TeamService {
       role: addMemberDto.role,
     });
 
-    return this.teamMemberRepository.save(member);
+    const savedMember = await this.teamMemberRepository.save(member);
+
+    // Return with user relation loaded
+    return this.teamMemberRepository.findOne({
+      where: { id: savedMember.id },
+      relations: ['user'],
+    }) as Promise<TeamMember>;
   }
 
   async removeMember(
