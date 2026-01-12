@@ -84,16 +84,15 @@ export default function TeamDetailPage() {
     if (!newMemberEmail.trim()) return;
 
     try {
-      // Note: The API might need userId, but we're using email for UX
-      // This would need backend support for looking up user by email
       const response = await teamsApi.addMember(teamId, {
-        userId: newMemberEmail, // This should be userId - simplified for demo
+        email: newMemberEmail,
         role: newMemberRole,
       });
       setMembers([...members, response.data]);
       setNewMemberEmail('');
       setNewMemberRole(TeamRole.MEMBER);
       setShowAddMemberModal(false);
+      setError('');
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to add member'));
     }
@@ -320,13 +319,13 @@ export default function TeamDetailPage() {
           )}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              User ID or Email
+              Email
             </label>
             <input
-              type="text"
+              type="email"
               value={newMemberEmail}
               onChange={(e) => setNewMemberEmail(e.target.value)}
-              placeholder="Enter user ID"
+              placeholder="user@example.com"
               className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>

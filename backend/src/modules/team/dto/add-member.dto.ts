@@ -1,11 +1,11 @@
-import { IsUUID, IsEnum, IsOptional } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TeamRole } from '../entities/team-member.entity';
 
 export class AddMemberDto {
-  @ApiProperty({ example: 'uuid' })
-  @IsUUID()
-  userId: string;
+  @ApiProperty({ example: 'user@example.com', description: 'Email of the user to add' })
+  @IsEmail()
+  email: string;
 
   @ApiPropertyOptional({ enum: TeamRole, default: TeamRole.MEMBER })
   @IsOptional()

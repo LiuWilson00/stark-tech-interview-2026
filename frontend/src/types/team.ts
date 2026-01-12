@@ -31,6 +31,6 @@ export interface CreateTeamRequest {
 }
 
 export interface AddMemberRequest {
-  userId: string;
+  email: string;
   role?: TeamRole;
 }

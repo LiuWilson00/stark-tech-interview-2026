@@ -10,7 +10,8 @@ import { Team } from './entities/team.entity';
 import { TeamMember, TeamRole } from './entities/team-member.entity';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { AddMemberDto } from './dto/add-member.dto';
-import { TEAM_ERRORS } from '../../common/errors';
+import { UserService } from '../user/user.service';
+import { TEAM_ERRORS, USER_ERRORS } from '../../common/errors';
 
 @Injectable()
 export class TeamService {
@@ -19,6 +20,7 @@ export class TeamService {
     private teamRepository: Repository<Team>,
     @InjectRepository(TeamMember)
     private teamMemberRepository: Repository<TeamMember>,
+    private userService: UserService,
   ) {}
 
   async findUserTeams(userId: string): Promise<Team[]> {
@@ -98,14 +100,20 @@ export class TeamService {
       throw new ForbiddenException(TEAM_ERRORS.NOT_TEAM_ADMIN);
     }
 
-    const existingMember = await this.findMembership(teamId, addMemberDto.userId);
+    // Find user by email
+    const userToAdd = await this.userService.findByEmail(addMemberDto.email);
+    if (!userToAdd) {
+      throw new NotFoundException(USER_ERRORS.USER_NOT_FOUND);
+    }
+
+    const existingMember = await this.findMembership(teamId, userToAdd.id);
     if (existingMember) {
       throw new ConflictException(TEAM_ERRORS.ALREADY_TEAM_MEMBER);
     }
 
     const member = this.teamMemberRepository.create({
       teamId,
-      userId: addMemberDto.userId,
+      userId: userToAdd.id,
       role: addMemberDto.role,
     });
 
