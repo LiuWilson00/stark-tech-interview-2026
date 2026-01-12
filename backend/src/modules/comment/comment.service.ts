@@ -5,6 +5,7 @@ import { Comment } from './entities/comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { HistoryService } from '../history/history.service';
 import { HistoryActionType } from '../history/entities/task-history.entity';
+import { COMMENT_ERRORS } from '../../common/errors';
 
 @Injectable()
 export class CommentService {
@@ -60,10 +61,7 @@ export class CommentService {
     });
 
     if (!comment) {
-      throw new NotFoundException({
-        code: 'COMMENT_NOT_FOUND',
-        message: 'Comment not found or you do not have permission',
-      });
+      throw new NotFoundException(COMMENT_ERRORS.COMMENT_NOT_FOUND);
     }
 
     await this.commentRepository.update(id, { content });
@@ -80,10 +78,7 @@ export class CommentService {
     });
 
     if (!comment) {
-      throw new NotFoundException({
-        code: 'COMMENT_NOT_FOUND',
-        message: 'Comment not found or you do not have permission',
-      });
+      throw new NotFoundException(COMMENT_ERRORS.COMMENT_NOT_FOUND);
     }
 
     await this.commentRepository.delete(id);

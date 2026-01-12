@@ -15,6 +15,7 @@ import { TeamService } from '../team/team.service';
 import { HistoryService } from '../history/history.service';
 import { HistoryActionType } from '../history/entities/task-history.entity';
 import { PaginatedResponse } from '../../common/dto/pagination.dto';
+import { TASK_ERRORS, TEAM_ERRORS } from '../../common/errors';
 
 @Injectable()
 export class TaskService {
@@ -166,10 +167,7 @@ export class TaskService {
     });
 
     if (!task) {
-      throw new NotFoundException({
-        code: 'TASK_NOT_FOUND',
-        message: 'Task not found',
-      });
+      throw new NotFoundException(TASK_ERRORS.TASK_NOT_FOUND);
     }
 
     return task;
@@ -184,10 +182,7 @@ export class TaskService {
       );
 
       if (!isMember) {
-        throw new ForbiddenException({
-          code: 'FORBIDDEN',
-          message: 'You must be a team member to create tasks',
-        });
+        throw new ForbiddenException(TEAM_ERRORS.NOT_TEAM_MEMBER);
       }
     }
 
@@ -243,10 +238,7 @@ export class TaskService {
 
     const canEdit = await this.canEditTask(task, userId);
     if (!canEdit) {
-      throw new ForbiddenException({
-        code: 'FORBIDDEN',
-        message: 'You do not have permission to edit this task',
-      });
+      throw new ForbiddenException(TASK_ERRORS.TASK_EDIT_DENIED);
     }
 
     const oldStatus = task.status;
@@ -300,17 +292,11 @@ export class TaskService {
           userId,
         );
         if (!membership || membership.role === 'member') {
-          throw new ForbiddenException({
-            code: 'FORBIDDEN',
-            message: 'You do not have permission to delete this task',
-          });
+          throw new ForbiddenException(TASK_ERRORS.TASK_DELETE_DENIED);
         }
       } else {
         // For personal tasks, only the creator can delete
-        throw new ForbiddenException({
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to delete this task',
-        });
+        throw new ForbiddenException(TASK_ERRORS.TASK_DELETE_DENIED);
       }
     }
 
@@ -334,10 +320,7 @@ export class TaskService {
 
     const canEdit = await this.canEditTask(task, userId);
     if (!canEdit) {
-      throw new ForbiddenException({
-        code: 'FORBIDDEN',
-        message: 'You do not have permission to complete this task',
-      });
+      throw new ForbiddenException(TASK_ERRORS.TASK_EDIT_DENIED);
     }
 
     // Mark assignee as completed if applicable
@@ -420,7 +403,7 @@ export class TaskService {
 
     const canEdit = await this.canEditTask(task, userId);
     if (!canEdit) {
-      throw new ForbiddenException();
+      throw new ForbiddenException(TASK_ERRORS.TASK_EDIT_DENIED);
     }
 
     await this.assigneeRepository.save({
@@ -442,7 +425,7 @@ export class TaskService {
 
     const canEdit = await this.canEditTask(task, userId);
     if (!canEdit) {
-      throw new ForbiddenException();
+      throw new ForbiddenException(TASK_ERRORS.TASK_EDIT_DENIED);
     }
 
     await this.assigneeRepository.delete({ taskId, userId: assigneeId });

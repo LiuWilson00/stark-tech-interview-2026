@@ -9,10 +9,13 @@ import * as bcrypt from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { AUTH_ERRORS } from '../../common/errors';
 
 @Injectable()
 export class AuthService {
   private readonly refreshSecret: string;
+  private readonly bcryptRounds: number;
+  private readonly refreshExpiresIn: string;
 
   constructor(
     private userService: UserService,
@@ -22,19 +25,24 @@ export class AuthService {
     this.refreshSecret =
       this.configService.get<string>('jwt.secret') + '-refresh' ||
       'default-refresh-secret';
+    this.bcryptRounds = this.configService.get<number>('auth.bcryptRounds', 12);
+    this.refreshExpiresIn = this.configService.get<string>(
+      'jwt.refreshExpiresIn',
+      '7d',
+    );
   }
 
   async register(registerDto: RegisterDto) {
     const existingUser = await this.userService.findByEmail(registerDto.email);
 
     if (existingUser) {
-      throw new ConflictException({
-        code: 'EMAIL_ALREADY_EXISTS',
-        message: 'Email already exists',
-      });
+      throw new ConflictException(AUTH_ERRORS.EMAIL_ALREADY_EXISTS);
     }
 
-    const passwordHash = await bcrypt.hash(registerDto.password, 12);
+    const passwordHash = await bcrypt.hash(
+      registerDto.password,
+      this.bcryptRounds,
+    );
 
     const user = await this.userService.create({
       email: registerDto.email,
@@ -62,10 +70,7 @@ export class AuthService {
     const user = await this.userService.findByEmail(loginDto.email);
 
     if (!user) {
-      throw new UnauthorizedException({
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid email or password',
-      });
+      throw new UnauthorizedException(AUTH_ERRORS.INVALID_CREDENTIALS);
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -74,10 +79,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException({
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid email or password',
-      });
+      throw new UnauthorizedException(AUTH_ERRORS.INVALID_CREDENTIALS);
     }
 
     const accessToken = this.generateAccessToken(user.id, user.email);
@@ -103,10 +105,7 @@ export class AuthService {
 
       const user = await this.userService.findById(payload.sub);
       if (!user) {
-        throw new UnauthorizedException({
-          code: 'INVALID_REFRESH_TOKEN',
-          message: 'Invalid refresh token',
-        });
+        throw new UnauthorizedException(AUTH_ERRORS.INVALID_TOKEN);
       }
 
       const newAccessToken = this.generateAccessToken(user.id, user.email);
@@ -117,10 +116,7 @@ export class AuthService {
         refreshToken: newRefreshToken,
       };
     } catch {
-      throw new UnauthorizedException({
-        code: 'INVALID_REFRESH_TOKEN',
-        message: 'Invalid or expired refresh token',
-      });
+      throw new UnauthorizedException(AUTH_ERRORS.INVALID_TOKEN);
     }
   }
 
@@ -131,9 +127,10 @@ export class AuthService {
 
   private generateRefreshToken(userId: string, email: string): string {
     const payload = { sub: userId, email };
+    const expiresIn = this.refreshExpiresIn;
     return this.jwtService.sign(payload, {
       secret: this.refreshSecret,
-      expiresIn: '7d',
+      expiresIn: expiresIn as any,
     });
   }
 }

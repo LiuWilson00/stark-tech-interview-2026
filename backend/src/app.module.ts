@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 
-import { appConfig, databaseConfig, jwtConfig } from './config';
+import { appConfig, authConfig, databaseConfig, jwtConfig } from './config';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -21,7 +21,7 @@ import { HistoryModule } from './modules/history/history.module';
     // Configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, jwtConfig],
+      load: [appConfig, authConfig, databaseConfig, jwtConfig],
     }),
 
     // Database

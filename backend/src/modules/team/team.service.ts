@@ -10,6 +10,7 @@ import { Team } from './entities/team.entity';
 import { TeamMember, TeamRole } from './entities/team-member.entity';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { AddMemberDto } from './dto/add-member.dto';
+import { TEAM_ERRORS } from '../../common/errors';
 
 @Injectable()
 export class TeamService {
@@ -62,18 +63,12 @@ export class TeamService {
     const team = await this.findById(teamId);
 
     if (!team) {
-      throw new NotFoundException({
-        code: 'TEAM_NOT_FOUND',
-        message: 'Team not found',
-      });
+      throw new NotFoundException(TEAM_ERRORS.TEAM_NOT_FOUND);
     }
 
     const membership = await this.findMembership(teamId, userId);
     if (!membership || !this.canManageTeam(membership.role)) {
-      throw new ForbiddenException({
-        code: 'FORBIDDEN',
-        message: 'You do not have permission to update this team',
-      });
+      throw new ForbiddenException(TEAM_ERRORS.NOT_TEAM_ADMIN);
     }
 
     await this.teamRepository.update(teamId, data);
@@ -95,26 +90,17 @@ export class TeamService {
     const team = await this.findById(teamId);
 
     if (!team) {
-      throw new NotFoundException({
-        code: 'TEAM_NOT_FOUND',
-        message: 'Team not found',
-      });
+      throw new NotFoundException(TEAM_ERRORS.TEAM_NOT_FOUND);
     }
 
     const requesterMembership = await this.findMembership(teamId, requesterId);
     if (!requesterMembership || !this.canManageTeam(requesterMembership.role)) {
-      throw new ForbiddenException({
-        code: 'FORBIDDEN',
-        message: 'You do not have permission to add members',
-      });
+      throw new ForbiddenException(TEAM_ERRORS.NOT_TEAM_ADMIN);
     }
 
     const existingMember = await this.findMembership(teamId, addMemberDto.userId);
     if (existingMember) {
-      throw new ConflictException({
-        code: 'ALREADY_TEAM_MEMBER',
-        message: 'User is already a team member',
-      });
+      throw new ConflictException(TEAM_ERRORS.ALREADY_TEAM_MEMBER);
     }
 
     const member = this.teamMemberRepository.create({
@@ -134,25 +120,16 @@ export class TeamService {
     const team = await this.findById(teamId);
 
     if (!team) {
-      throw new NotFoundException({
-        code: 'TEAM_NOT_FOUND',
-        message: 'Team not found',
-      });
+      throw new NotFoundException(TEAM_ERRORS.TEAM_NOT_FOUND);
     }
 
     if (team.ownerId === userId) {
-      throw new ForbiddenException({
-        code: 'FORBIDDEN',
-        message: 'Cannot remove team owner',
-      });
+      throw new ForbiddenException(TEAM_ERRORS.CANNOT_REMOVE_OWNER);
     }
 
     const requesterMembership = await this.findMembership(teamId, requesterId);
     if (!requesterMembership || !this.canManageTeam(requesterMembership.role)) {
-      throw new ForbiddenException({
-        code: 'FORBIDDEN',
-        message: 'You do not have permission to remove members',
-      });
+      throw new ForbiddenException(TEAM_ERRORS.NOT_TEAM_ADMIN);
     }
 
     await this.teamMemberRepository.delete({ teamId, userId });
