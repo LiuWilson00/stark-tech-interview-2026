@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # MySQL Database for development
+  db:
+    image: mysql:8.0
+    container_name: todolist-db-dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "00000000"
+      MYSQL_DATABASE: todolist
+    volumes:
+      - mysql_data_dev:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # Redis for development
+  redis:
+    image: redis:7-alpine
+    container_name: todolist-redis-dev
+    restart: unless-stopped
+    volumes:
+      - redis_data_dev:/data
+    ports:
+      - "6379:6379"
+
+volumes:
+  mysql_data_dev:
+  redis_data_dev:
