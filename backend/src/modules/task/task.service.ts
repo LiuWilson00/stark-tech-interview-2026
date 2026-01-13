@@ -16,6 +16,7 @@ import { HistoryService } from '../history/history.service';
 import { HistoryActionType } from '../history/entities/task-history.entity';
 import { PaginatedResponse } from '../../common/dto/pagination.dto';
 import { TASK_ERRORS, TEAM_ERRORS } from '../../common/errors';
+import { TaskAuthorizationHelper } from './helpers/task-authorization.helper';
 
 @Injectable()
 export class TaskService {
@@ -28,6 +29,7 @@ export class TaskService {
     private followerRepository: Repository<TaskFollower>,
     private teamService: TeamService,
     private historyService: HistoryService,
+    private authHelper: TaskAuthorizationHelper,
   ) {}
 
   async findAll(
@@ -257,10 +259,7 @@ export class TaskService {
   ): Promise<Task> {
     const task = await this.findById(id);
 
-    const canEdit = await this.canEditTask(task, userId);
-    if (!canEdit) {
-      throw new ForbiddenException(TASK_ERRORS.TASK_EDIT_DENIED);
-    }
+    await this.authHelper.assertCanEdit(task, userId);
 
     const oldStatus = task.status;
     const changes: string[] = [];
@@ -305,21 +304,7 @@ export class TaskService {
   async delete(id: string, userId: string): Promise<void> {
     const task = await this.findById(id);
 
-    if (task.creatorId !== userId) {
-      // For team tasks, check membership
-      if (task.teamId) {
-        const membership = await this.teamService.findMembership(
-          task.teamId,
-          userId,
-        );
-        if (!membership || membership.role === 'member') {
-          throw new ForbiddenException(TASK_ERRORS.TASK_DELETE_DENIED);
-        }
-      } else {
-        // For personal tasks, only the creator can delete
-        throw new ForbiddenException(TASK_ERRORS.TASK_DELETE_DENIED);
-      }
-    }
+    await this.authHelper.assertCanDelete(task, userId);
 
     await this.taskRepository.update(id, { isDeleted: true });
   }
@@ -339,10 +324,7 @@ export class TaskService {
   ): Promise<Task> {
     const task = await this.findById(id);
 
-    const canEdit = await this.canEditTask(task, userId);
-    if (!canEdit) {
-      throw new ForbiddenException(TASK_ERRORS.TASK_EDIT_DENIED);
-    }
+    await this.authHelper.assertCanEdit(task, userId);
 
     // Mark assignee as completed if applicable
     const assignee = task.assignees?.find((a) => a.userId === userId);
@@ -422,10 +404,7 @@ export class TaskService {
   async addAssignee(taskId: string, userId: string, assigneeId: string): Promise<void> {
     const task = await this.findById(taskId);
 
-    const canEdit = await this.canEditTask(task, userId);
-    if (!canEdit) {
-      throw new ForbiddenException(TASK_ERRORS.TASK_EDIT_DENIED);
-    }
+    await this.authHelper.assertCanEdit(task, userId);
 
     await this.assigneeRepository.save({
       taskId,
@@ -444,10 +423,7 @@ export class TaskService {
   async removeAssignee(taskId: string, userId: string, assigneeId: string): Promise<void> {
     const task = await this.findById(taskId);
 
-    const canEdit = await this.canEditTask(task, userId);
-    if (!canEdit) {
-      throw new ForbiddenException(TASK_ERRORS.TASK_EDIT_DENIED);
-    }
+    await this.authHelper.assertCanEdit(task, userId);
 
     await this.assigneeRepository.delete({ taskId, userId: assigneeId });
 
@@ -489,22 +465,5 @@ export class TaskService {
       oldValue: { followerId },
       description: 'Follower removed',
     });
-  }
-
-  private async canEditTask(task: Task, userId: string): Promise<boolean> {
-    // Creator can edit
-    if (task.creatorId === userId) return true;
-
-    // Assignee can edit
-    const isAssignee = task.assignees?.some((a) => a.userId === userId);
-    if (isAssignee) return true;
-
-    // Team admin/owner can edit (only if task belongs to a team)
-    if (task.teamId) {
-      const membership = await this.teamService.findMembership(task.teamId, userId);
-      if (membership && membership.role !== 'member') return true;
-    }
-
-    return false;
   }
 }

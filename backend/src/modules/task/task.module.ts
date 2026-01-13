@@ -7,6 +7,7 @@ import { TaskAssignee } from './entities/task-assignee.entity';
 import { TaskFollower } from './entities/task-follower.entity';
 import { TeamModule } from '../team/team.module';
 import { HistoryModule } from '../history/history.module';
+import { TaskAuthorizationHelper } from './helpers/task-authorization.helper';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { HistoryModule } from '../history/history.module';
     HistoryModule,
   ],
   controllers: [TaskController],
-  providers: [TaskService],
+  providers: [TaskService, TaskAuthorizationHelper],
   exports: [TaskService],
 })
 export class TaskModule {}

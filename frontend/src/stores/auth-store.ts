@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@/types/user';
 import { authApi } from '@/lib/api/auth';
+import { TokenService } from '@/lib/services/token-service';
 
 interface AuthState {
   user: User | null;
@@ -23,7 +24,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       token: null,
       refreshToken: null,
@@ -37,12 +38,10 @@ export const useAuthStore = create<AuthState>()(
 
       setToken: (token) => {
         set({ token });
-        if (typeof window !== 'undefined') {
-          if (token) {
-            localStorage.setItem('accessToken', token);
-          } else {
-            localStorage.removeItem('accessToken');
-          }
+        if (token) {
+          TokenService.setAccessToken(token);
+        } else {
+          TokenService.clearAccessToken();
         }
       },
 
@@ -52,6 +51,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await authApi.login({ email, password });
           const { user, accessToken, refreshToken } = response.data;
 
+          // Update store state
           set({
             user,
             token: accessToken,
@@ -60,10 +60,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
 
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
-          }
+          // Sync to localStorage via TokenService
+          TokenService.setTokens(accessToken, refreshToken);
         } catch (error) {
           set({ isLoading: false });
           throw error;
@@ -76,6 +74,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await authApi.register({ email, password, name });
           const { user, accessToken, refreshToken } = response.data;
 
+          // Update store state
           set({
             user,
             token: accessToken,
@@ -84,10 +83,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
 
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
-          }
+          // Sync to localStorage via TokenService
+          TokenService.setTokens(accessToken, refreshToken);
         } catch (error) {
           set({ isLoading: false });
           throw error;
@@ -95,6 +92,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        // Clear store state
         set({
           user: null,
           token: null,
@@ -102,19 +100,15 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
         });
 
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-        }
+        // Clear tokens from localStorage
+        TokenService.clearTokens();
       },
 
       hydrate: () => {
-        if (typeof window !== 'undefined') {
-          const token = localStorage.getItem('accessToken');
-          const refreshToken = localStorage.getItem('refreshToken');
-          if (token) {
-            set({ token, refreshToken, isAuthenticated: true });
-          }
+        const token = TokenService.getAccessToken();
+        const refreshToken = TokenService.getRefreshToken();
+        if (token) {
+          set({ token, refreshToken, isAuthenticated: true });
         }
       },
     }),
