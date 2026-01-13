@@ -1,8 +1,13 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { teamsApi } from '@/lib/api/teams';
 import { CreateTeamRequest, AddMemberRequest } from '@/types/team';
+import { createMutation } from '@/lib/hooks/create-mutation';
+
+// ---------------------------------------------------------------------------
+// Query Hooks
+// ---------------------------------------------------------------------------
 
 export function useTeams() {
   return useQuery({
@@ -30,37 +35,23 @@ export function useTeamMembers(teamId: string) {
   });
 }
 
-export function useCreateTeam() {
-  const queryClient = useQueryClient();
+// ---------------------------------------------------------------------------
+// Mutation Hooks (using createMutation factory)
+// ---------------------------------------------------------------------------
 
-  return useMutation({
-    mutationFn: (data: CreateTeamRequest) => teamsApi.createTeam(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
-    },
-  });
-}
+export const useCreateTeam = createMutation({
+  mutationFn: (data: CreateTeamRequest) => teamsApi.createTeam(data),
+  invalidateKeys: [['teams']],
+});
 
-export function useAddTeamMember() {
-  const queryClient = useQueryClient();
+export const useAddTeamMember = createMutation({
+  mutationFn: ({ teamId, data }: { teamId: string; data: AddMemberRequest }) =>
+    teamsApi.addMember(teamId, data),
+  getInvalidateKeys: (variables) => [['teamMembers', variables.teamId]],
+});
 
-  return useMutation({
-    mutationFn: ({ teamId, data }: { teamId: string; data: AddMemberRequest }) =>
-      teamsApi.addMember(teamId, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['teamMembers', variables.teamId] });
-    },
-  });
-}
-
-export function useRemoveTeamMember() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ teamId, userId }: { teamId: string; userId: string }) =>
-      teamsApi.removeMember(teamId, userId),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['teamMembers', variables.teamId] });
-    },
-  });
-}
+export const useRemoveTeamMember = createMutation({
+  mutationFn: ({ teamId, userId }: { teamId: string; userId: string }) =>
+    teamsApi.removeMember(teamId, userId),
+  getInvalidateKeys: (variables) => [['teamMembers', variables.teamId]],
+});

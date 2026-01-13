@@ -4,6 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Task, TaskStatus } from './entities/task.entity';
 import { TaskAssignee } from './entities/task-assignee.entity';
@@ -12,11 +13,21 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskFilterDto, TaskView } from './dto/task-filter.dto';
 import { TeamService } from '../team/team.service';
-import { HistoryService } from '../history/history.service';
-import { HistoryActionType } from '../history/entities/task-history.entity';
 import { PaginatedResponse } from '../../common/dto/pagination.dto';
 import { TASK_ERRORS, TEAM_ERRORS } from '../../common/errors';
 import { TaskAuthorizationHelper } from './helpers/task-authorization.helper';
+import { TaskWithCounts } from './interfaces/task-with-counts.interface';
+import {
+  TASK_EVENTS,
+  TaskCreatedEvent,
+  TaskUpdatedEvent,
+  TaskCompletedEvent,
+  TaskStatusChangedEvent,
+  TaskAssigneeAddedEvent,
+  TaskAssigneeRemovedEvent,
+  TaskFollowerAddedEvent,
+  TaskFollowerRemovedEvent,
+} from './events/task.events';
 
 @Injectable()
 export class TaskService {
@@ -28,14 +39,14 @@ export class TaskService {
     @InjectRepository(TaskFollower)
     private followerRepository: Repository<TaskFollower>,
     private teamService: TeamService,
-    private historyService: HistoryService,
+    private eventEmitter: EventEmitter2,
     private authHelper: TaskAuthorizationHelper,
   ) {}
 
   async findAll(
     userId: string,
     filterDto: TaskFilterDto,
-  ): Promise<PaginatedResponse<Task>> {
+  ): Promise<PaginatedResponse<TaskWithCounts>> {
     const {
       teamId,
       view,
@@ -102,9 +113,16 @@ export class TaskService {
 
     const items = await qb.skip(skip).take(limit).getMany();
 
+    // Initialize items with count properties as TaskWithCounts
+    const itemsWithCounts: TaskWithCounts[] = items.map((task) => ({
+      ...task,
+      subtasksCount: 0,
+      completedSubtasksCount: 0,
+    }));
+
     // Load subtask counts with a single aggregation query (N+1 optimization)
-    if (items.length > 0) {
-      const taskIds = items.map((t) => t.id);
+    if (itemsWithCounts.length > 0) {
+      const taskIds = itemsWithCounts.map((t) => t.id);
 
       const subtaskCounts = await this.taskRepository
         .createQueryBuilder('subtask')
@@ -126,15 +144,15 @@ export class TaskService {
         ]),
       );
 
-      for (const task of items) {
+      for (const task of itemsWithCounts) {
         const counts = countMap.get(task.id) || { total: 0, completed: 0 };
-        (task as any).subtasksCount = counts.total;
-        (task as any).completedSubtasksCount = counts.completed;
+        task.subtasksCount = counts.total;
+        task.completedSubtasksCount = counts.completed;
       }
     }
 
     return {
-      items,
+      items: itemsWithCounts,
       meta: {
         page,
         limit,
@@ -241,13 +259,11 @@ export class TaskService {
       }
     }
 
-    // Record history
-    await this.historyService.create({
-      taskId: savedTask.id,
-      userId,
-      actionType: HistoryActionType.CREATED,
-      description: `Task "${savedTask.title}" was created`,
-    });
+    // Emit task created event (history handled by listener)
+    this.eventEmitter.emit(
+      TASK_EVENTS.CREATED,
+      new TaskCreatedEvent(savedTask.id, userId, savedTask.title),
+    );
 
     return this.findById(savedTask.id);
   }
@@ -271,15 +287,11 @@ export class TaskService {
     if (updateTaskDto.status && updateTaskDto.status !== task.status) {
       changes.push(`status changed from ${task.status} to ${updateTaskDto.status}`);
 
-      // Record status change history
-      await this.historyService.create({
-        taskId: id,
-        userId,
-        actionType: HistoryActionType.STATUS_CHANGED,
-        oldValue: { status: oldStatus },
-        newValue: { status: updateTaskDto.status },
-        description: `Status changed from ${oldStatus} to ${updateTaskDto.status}`,
-      });
+      // Emit status changed event
+      this.eventEmitter.emit(
+        TASK_EVENTS.STATUS_CHANGED,
+        new TaskStatusChangedEvent(id, userId, oldStatus, updateTaskDto.status),
+      );
     }
 
     await this.taskRepository.update(id, {
@@ -290,12 +302,11 @@ export class TaskService {
     });
 
     if (changes.length && !updateTaskDto.status) {
-      await this.historyService.create({
-        taskId: id,
-        userId,
-        actionType: HistoryActionType.UPDATED,
-        description: changes.join(', '),
-      });
+      // Emit task updated event
+      this.eventEmitter.emit(
+        TASK_EVENTS.UPDATED,
+        new TaskUpdatedEvent(id, userId, changes.join(', ')),
+      );
     }
 
     return this.findById(id);
@@ -361,13 +372,11 @@ export class TaskService {
       }
     }
 
-    // Record history
-    await this.historyService.create({
-      taskId: id,
-      userId,
-      actionType: HistoryActionType.COMPLETED,
-      description: `Task completed by user`,
-    });
+    // Emit task completed event
+    this.eventEmitter.emit(
+      TASK_EVENTS.COMPLETED,
+      new TaskCompletedEvent(id, userId),
+    );
 
     // Check if parent task should be auto-completed
     if (task.parentTaskId) {
@@ -392,12 +401,11 @@ export class TaskService {
         completedAt: new Date(),
       });
 
-      await this.historyService.create({
-        taskId: parentTaskId,
-        userId,
-        actionType: HistoryActionType.COMPLETED,
-        description: 'Task auto-completed (all subtasks completed)',
-      });
+      // Emit auto-completed event
+      this.eventEmitter.emit(
+        TASK_EVENTS.COMPLETED,
+        new TaskCompletedEvent(parentTaskId, userId, true),
+      );
     }
   }
 
@@ -411,13 +419,11 @@ export class TaskService {
       userId: assigneeId,
     });
 
-    await this.historyService.create({
-      taskId,
-      userId,
-      actionType: HistoryActionType.ASSIGNEE_ADDED,
-      newValue: { assigneeId },
-      description: 'Assignee added',
-    });
+    // Emit assignee added event
+    this.eventEmitter.emit(
+      TASK_EVENTS.ASSIGNEE_ADDED,
+      new TaskAssigneeAddedEvent(taskId, userId, assigneeId),
+    );
   }
 
   async removeAssignee(taskId: string, userId: string, assigneeId: string): Promise<void> {
@@ -427,13 +433,11 @@ export class TaskService {
 
     await this.assigneeRepository.delete({ taskId, userId: assigneeId });
 
-    await this.historyService.create({
-      taskId,
-      userId,
-      actionType: HistoryActionType.ASSIGNEE_REMOVED,
-      oldValue: { assigneeId },
-      description: 'Assignee removed',
-    });
+    // Emit assignee removed event
+    this.eventEmitter.emit(
+      TASK_EVENTS.ASSIGNEE_REMOVED,
+      new TaskAssigneeRemovedEvent(taskId, userId, assigneeId),
+    );
   }
 
   async addFollower(taskId: string, userId: string, followerId: string): Promise<void> {
@@ -444,13 +448,11 @@ export class TaskService {
       userId: followerId,
     });
 
-    await this.historyService.create({
-      taskId,
-      userId,
-      actionType: HistoryActionType.FOLLOWER_ADDED,
-      newValue: { followerId },
-      description: 'Follower added',
-    });
+    // Emit follower added event
+    this.eventEmitter.emit(
+      TASK_EVENTS.FOLLOWER_ADDED,
+      new TaskFollowerAddedEvent(taskId, userId, followerId),
+    );
   }
 
   async removeFollower(taskId: string, userId: string, followerId: string): Promise<void> {
@@ -458,12 +460,10 @@ export class TaskService {
 
     await this.followerRepository.delete({ taskId, userId: followerId });
 
-    await this.historyService.create({
-      taskId,
-      userId,
-      actionType: HistoryActionType.FOLLOWER_REMOVED,
-      oldValue: { followerId },
-      description: 'Follower removed',
-    });
+    // Emit follower removed event
+    this.eventEmitter.emit(
+      TASK_EVENTS.FOLLOWER_REMOVED,
+      new TaskFollowerRemovedEvent(taskId, userId, followerId),
+    );
   }
 }

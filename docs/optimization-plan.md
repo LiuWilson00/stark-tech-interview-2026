@@ -206,6 +206,15 @@ export { TokenService };
 
 ## Phase 2: 中優先級優化
 
+| 項目 | 狀態 |
+|------|------|
+| 2.1 Event Emitter 處理歷史記錄 | ✅ 已完成 |
+| 2.2 Mutation Hook Factory | ✅ 已完成 |
+| 2.3 加強 DTO 驗證 | ✅ 已完成 |
+| 2.4 移除 any 型別 | ✅ 已完成 |
+
+---
+
 ### 2.1 Backend - 使用 Decorator 處理歷史記錄
 
 **問題**：歷史記錄邏輯與業務邏輯混雜

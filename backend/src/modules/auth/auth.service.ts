@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { StringValue } from 'ms';
 import * as bcrypt from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { RegisterDto } from './dto/register.dto';
@@ -15,7 +16,7 @@ import { AUTH_ERRORS } from '../../common/errors';
 export class AuthService {
   private readonly refreshSecret: string;
   private readonly bcryptRounds: number;
-  private readonly refreshExpiresIn: string;
+  private readonly refreshExpiresIn: StringValue;
 
   constructor(
     private userService: UserService,
@@ -26,9 +27,9 @@ export class AuthService {
       this.configService.get<string>('jwt.secret') + '-refresh' ||
       'default-refresh-secret';
     this.bcryptRounds = this.configService.get<number>('auth.bcryptRounds', 12);
-    this.refreshExpiresIn = this.configService.get<string>(
+    this.refreshExpiresIn = this.configService.get<StringValue>(
       'jwt.refreshExpiresIn',
-      '7d',
+      '7d' as StringValue,
     );
   }
 
@@ -127,10 +128,9 @@ export class AuthService {
 
   private generateRefreshToken(userId: string, email: string): string {
     const payload = { sub: userId, email };
-    const expiresIn = this.refreshExpiresIn;
     return this.jwtService.sign(payload, {
       secret: this.refreshSecret,
-      expiresIn: expiresIn as any,
+      expiresIn: this.refreshExpiresIn,
     });
   }
 }

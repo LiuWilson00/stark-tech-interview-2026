@@ -1,9 +1,10 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { tasksApi } from '@/lib/api/tasks';
 import { useUIStore } from '@/stores/ui-store';
 import { CreateTaskRequest, UpdateTaskRequest, TaskFilterParams } from '@/types/task';
+import { createMutation } from '@/lib/hooks/create-mutation';
 
 export function useTasks(additionalParams?: Partial<TaskFilterParams>) {
   const { currentTeamId, currentView, filters, sortBy, sortOrder } = useUIStore();
@@ -47,54 +48,33 @@ export function useSubtasks(taskId: string) {
   });
 }
 
-export function useCreateTask() {
-  const queryClient = useQueryClient();
+// ---------------------------------------------------------------------------
+// Mutation Hooks (using createMutation factory)
+// ---------------------------------------------------------------------------
 
-  return useMutation({
-    mutationFn: (data: CreateTaskRequest) => tasksApi.createTask(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    },
-  });
-}
+export const useCreateTask = createMutation({
+  mutationFn: (data: CreateTaskRequest) => tasksApi.createTask(data),
+  invalidateKeys: [['tasks']],
+});
 
-export function useUpdateTask() {
-  const queryClient = useQueryClient();
+export const useUpdateTask = createMutation({
+  mutationFn: ({ id, data }: { id: string; data: UpdateTaskRequest }) =>
+    tasksApi.updateTask(id, data),
+  invalidateKeys: [['tasks']],
+  getInvalidateKeys: (variables) => [['task', variables.id]],
+});
 
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTaskRequest }) =>
-      tasksApi.updateTask(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['task', variables.id] });
-    },
-  });
-}
+export const useDeleteTask = createMutation({
+  mutationFn: (id: string) => tasksApi.deleteTask(id),
+  invalidateKeys: [['tasks']],
+});
 
-export function useDeleteTask() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => tasksApi.deleteTask(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    },
-  });
-}
-
-export function useCompleteTask() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, completeSubtasks }: { id: string; completeSubtasks?: boolean }) =>
-      tasksApi.completeTask(id, completeSubtasks),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['task', variables.id] });
-      queryClient.invalidateQueries({ queryKey: ['subtasks'] });
-    },
-  });
-}
+export const useCompleteTask = createMutation({
+  mutationFn: ({ id, completeSubtasks }: { id: string; completeSubtasks?: boolean }) =>
+    tasksApi.completeTask(id, completeSubtasks),
+  invalidateKeys: [['tasks'], ['subtasks']],
+  getInvalidateKeys: (variables) => [['task', variables.id]],
+});
 
 export function useTaskHistory(taskId: string) {
   return useQuery({
@@ -114,15 +94,11 @@ export function useTaskComments(taskId: string) {
   });
 }
 
-export function useCreateComment() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ taskId, content }: { taskId: string; content: string }) =>
-      tasksApi.createComment(taskId, { content }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['taskComments', variables.taskId] });
-      queryClient.invalidateQueries({ queryKey: ['taskHistory', variables.taskId] });
-    },
-  });
-}
+export const useCreateComment = createMutation({
+  mutationFn: ({ taskId, content }: { taskId: string; content: string }) =>
+    tasksApi.createComment(taskId, { content }),
+  getInvalidateKeys: (variables) => [
+    ['taskComments', variables.taskId],
+    ['taskHistory', variables.taskId],
+  ],
+});

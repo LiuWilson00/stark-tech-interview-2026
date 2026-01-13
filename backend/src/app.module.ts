@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 
 import { appConfig, authConfig, databaseConfig, jwtConfig } from './config';
@@ -52,6 +53,9 @@ import { HealthModule } from './modules/health/health.module';
         limit: 100, // 100 requests per minute
       },
     ]),
+
+    // Event emitter for decoupled event handling
+    EventEmitterModule.forRoot(),
 
     // Feature modules
     AuthModule,
