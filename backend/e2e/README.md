@@ -119,10 +119,8 @@ Options:
 - Update team
 - Add member to team
 - Get team members
-- Update member role
 - Team access denied for non-members
 - Remove member from team
-- Delete team
 
 ### Task Tests (`task/task-test.sh`)
 - Create personal task
@@ -138,9 +136,7 @@ Options:
 - Add follower to task
 - Remove follower from task
 - Complete task
-- Reopen task
 - Filter tasks by status
-- Filter tasks by priority
 - Delete subtask
 - Delete task
 

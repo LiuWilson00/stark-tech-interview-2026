@@ -412,9 +412,7 @@ run_task_tests() {
     run_test "Add follower to task" test_add_follower
     run_test "Remove follower from task" test_remove_follower
     run_test "Complete task" test_complete_task
-    skip_test "Reopen task" "Endpoint not implemented"
     run_test "Filter tasks by status" test_filter_tasks_by_status
-    skip_test "Filter tasks by priority" "Filter not implemented"
     run_test "Delete subtask" test_delete_subtask
     run_test "Delete task" test_delete_task
 }

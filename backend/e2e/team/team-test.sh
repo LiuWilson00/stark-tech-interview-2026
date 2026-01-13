@@ -241,10 +241,8 @@ run_team_tests() {
     run_test "Update team" test_update_team
     run_test "Add member to team" test_add_team_member
     run_test "Get team members" test_get_team_members
-    skip_test "Update member role" "Endpoint not implemented"
     run_test "Team access denied for non-members" test_team_access_denied
     run_test "Remove member from team" test_remove_team_member
-    skip_test "Delete team" "Endpoint not implemented"
 }
 
 # Run if executed directly
