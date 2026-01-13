@@ -64,6 +64,20 @@ Services will be available at:
 | Swagger Docs | http://localhost:3011/api/docs |
 | MySQL | localhost:3307 |
 
+### Demo Accounts
+
+The database is automatically seeded with demo data. You can login with any of these accounts:
+
+| Email | Name | Password | Teams |
+|-------|------|----------|-------|
+| tony@stark.com | Tony Stark | `Password123!` | Avengers (Owner), Stark R&D (Owner) |
+| steve@avengers.com | Steve Rogers | `Password123!` | Avengers (Admin), SHIELD (Member) |
+| natasha@shield.com | Natasha Romanoff | `Password123!` | SHIELD (Owner), Avengers (Member) |
+| bruce@stark.com | Bruce Banner | `Password123!` | Stark R&D (Admin), Avengers (Member) |
+| peter@dailybugle.com | Peter Parker | `Password123!` | Stark R&D (Member) |
+
+The seed also includes 8 sample tasks with comments, assignees, and history.
+
 ### Stop Services
 
 ```bash
