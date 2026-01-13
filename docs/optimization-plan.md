@@ -381,6 +381,14 @@ const savedTask = await this.taskRepository.save<Task>(task);
 
 ## Phase 3: 低優先級優化（可選）
 
+| 項目 | 狀態 |
+|------|------|
+| 3.1 拆分大型頁面組件 | ✅ 已完成 |
+| 3.2 新增資料庫索引 | ✅ 已完成 |
+| 3.3 統一錯誤處理 Helper | ✅ 已完成 |
+
+---
+
 ### 3.1 拆分大型頁面組件
 
 將 `tasks/[id]/page.tsx` (688 行) 拆分為：
