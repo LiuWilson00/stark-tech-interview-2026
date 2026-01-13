@@ -100,15 +100,35 @@ export class TaskService {
 
     const items = await qb.skip(skip).take(limit).getMany();
 
-    // Load subtask counts
-    for (const task of items) {
-      const subtasks = await this.taskRepository.find({
-        where: { parentTaskId: task.id, isDeleted: false },
-      });
-      (task as any).subtasksCount = subtasks.length;
-      (task as any).completedSubtasksCount = subtasks.filter(
-        (s) => s.status === TaskStatus.COMPLETED,
-      ).length;
+    // Load subtask counts with a single aggregation query (N+1 optimization)
+    if (items.length > 0) {
+      const taskIds = items.map((t) => t.id);
+
+      const subtaskCounts = await this.taskRepository
+        .createQueryBuilder('subtask')
+        .select('subtask.parentTaskId', 'parentTaskId')
+        .addSelect('COUNT(*)', 'total')
+        .addSelect(
+          `SUM(CASE WHEN subtask.status = '${TaskStatus.COMPLETED}' THEN 1 ELSE 0 END)`,
+          'completed',
+        )
+        .where('subtask.parentTaskId IN (:...taskIds)', { taskIds })
+        .andWhere('subtask.isDeleted = :isDeleted', { isDeleted: false })
+        .groupBy('subtask.parentTaskId')
+        .getRawMany<{ parentTaskId: string; total: string; completed: string }>();
+
+      const countMap = new Map(
+        subtaskCounts.map((c) => [
+          c.parentTaskId,
+          { total: parseInt(c.total, 10), completed: parseInt(c.completed, 10) },
+        ]),
+      );
+
+      for (const task of items) {
+        const counts = countMap.get(task.id) || { total: 0, completed: 0 };
+        (task as any).subtasksCount = counts.total;
+        (task as any).completedSubtasksCount = counts.completed;
+      }
     }
 
     return {
