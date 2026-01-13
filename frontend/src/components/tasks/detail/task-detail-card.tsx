@@ -89,7 +89,7 @@ export function TaskDetailCard({
         </div>
         <div>
           <span className="font-medium">Created at:</span>
-          <p>{formatDateTimeTime(task.createdAt)}</p>
+          <p>{formatDateTime(task.createdAt)}</p>
         </div>
         {task.dueDate && (
           <div>

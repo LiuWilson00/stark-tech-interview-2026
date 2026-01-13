@@ -330,12 +330,15 @@ function Sidebar({
   );
 }
 
+interface TaskFormState {
+  title: string;
+  description: string;
+  priority: TaskPriority;
+}
+
 interface TaskFormProps {
-  taskForm: { title: string; description: string; priority: TaskPriority };
-  updateTaskForm: <K extends 'title' | 'description' | 'priority'>(
-    key: K,
-    value: K extends 'priority' ? TaskPriority : string
-  ) => void;
+  taskForm: TaskFormState;
+  updateTaskForm: <K extends keyof TaskFormState>(key: K, value: TaskFormState[K]) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
   error: string;
