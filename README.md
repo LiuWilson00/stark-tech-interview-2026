@@ -21,10 +21,10 @@ A collaborative task management application inspired by Lark Tasks, built with N
 - **Views**: My Tasks, Assigned to Me, Following, Completed
 
 ### Documentation
-- Swagger API documentation
-- Schema designs for:
-  - Notification reminders for upcoming deadlines
-  - Recurring task scheduling
+- Swagger API documentation at `/api/docs`
+- Schema designs for planned features:
+  - [Notification Reminders](backend/docs/notification-reminder.md) - Task due date reminders
+  - [Recurring Tasks](backend/docs/recurring-tasks.md) - Scheduled repeating tasks
 
 ## Tech Stack
 
@@ -131,6 +131,9 @@ npm run dev
 │   │       ├── task/       # Task management
 │   │       ├── comment/    # Comments
 │   │       └── history/    # Task history
+│   ├── docs/               # Technical documentation
+│   │   ├── notification-reminder.md
+│   │   └── recurring-tasks.md
 │   ├── e2e/                # E2E test scripts
 │   └── Dockerfile
 │
