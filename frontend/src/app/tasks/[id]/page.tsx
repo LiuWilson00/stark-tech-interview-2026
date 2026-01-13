@@ -18,7 +18,7 @@ export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
   const taskId = params.id as string;
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, _hasHydrated } = useAuthStore();
 
   const [task, setTask] = useState<Task | null>(null);
   const [subtasks, setSubtasks] = useState<Task[]>([]);
@@ -40,12 +40,14 @@ export default function TaskDetailPage() {
   const [showFollowerModal, setShowFollowerModal] = useState(false);
 
   useEffect(() => {
+    if (!_hasHydrated) return;
+
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
     loadTaskData();
-  }, [taskId, isAuthenticated]);
+  }, [taskId, _hasHydrated, isAuthenticated]);
 
   const loadTaskData = async () => {
     setLoading(true);

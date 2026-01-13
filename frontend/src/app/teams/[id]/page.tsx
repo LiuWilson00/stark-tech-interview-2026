@@ -16,7 +16,7 @@ export default function TeamDetailPage() {
   const router = useRouter();
   const params = useParams();
   const teamId = params.id as string;
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, _hasHydrated } = useAuthStore();
 
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -36,6 +36,8 @@ export default function TeamDetailPage() {
   const isAdmin = currentMember?.role === TeamRole.ADMIN || isOwner;
 
   useEffect(() => {
+    if (!_hasHydrated) return;
+
     if (!isAuthenticated) {
       router.push('/login');
       return;

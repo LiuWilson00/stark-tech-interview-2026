@@ -13,7 +13,7 @@ import { AppHeader } from '@/components/layout/app-header';
 
 export default function TeamsPage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, _hasHydrated } = useAuthStore();
   const { data: teams, isLoading } = useTeams();
   const createTeamMutation = useCreateTeam();
 
@@ -23,10 +23,10 @@ export default function TeamsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (_hasHydrated && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [_hasHydrated, isAuthenticated, router]);
 
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();

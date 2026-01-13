@@ -14,7 +14,7 @@ import { AppHeader } from '@/components/layout/app-header';
 
 export default function TasksPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, _hasHydrated } = useAuthStore();
   const { data: teams, isLoading: teamsLoading } = useTeams();
   const createTeamMutation = useCreateTeam();
 
@@ -45,12 +45,12 @@ export default function TasksPage() {
   const [assigneeId, setAssigneeId] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated (wait for hydration first)
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (_hasHydrated && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [_hasHydrated, isAuthenticated, router]);
 
   // Load tasks when team, view, or filters change
   useEffect(() => {

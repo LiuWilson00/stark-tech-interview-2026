@@ -11,7 +11,7 @@ import { toast } from '@/stores/toast-store';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { isAuthenticated, user: authUser, setUser } = useAuthStore();
+  const { isAuthenticated, user: authUser, setUser, _hasHydrated } = useAuthStore();
 
   const [user, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,12 +21,14 @@ export default function ProfilePage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!_hasHydrated) return;
+
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
     loadProfile();
-  }, [isAuthenticated]);
+  }, [_hasHydrated, isAuthenticated]);
 
   const loadProfile = async () => {
     try {

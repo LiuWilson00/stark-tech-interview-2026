@@ -11,18 +11,20 @@ type Theme = 'light' | 'dark' | 'system';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { isAuthenticated, logout } = useAuthStore();
+  const { isAuthenticated, logout, _hasHydrated } = useAuthStore();
   const { theme, setTheme, initTheme } = useThemeStore();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
+    if (!_hasHydrated) return;
+
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
     initTheme();
-  }, [isAuthenticated, initTheme]);
+  }, [_hasHydrated, isAuthenticated, initTheme]);
 
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
