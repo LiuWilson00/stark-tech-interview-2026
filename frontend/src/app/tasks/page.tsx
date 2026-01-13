@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useTeams, useCreateTeam, useTeamMembers } from '@/hooks/use-teams';
 import { getErrorMessage } from '@/lib/utils/error';
 import { tasksApi } from '@/lib/api/tasks';
-import { Task, TaskStatus, TaskPriority, TaskView, CreateTaskRequest } from '@/types/task';
+import { Task, TaskStatus, TaskPriority, TaskView, CreateTaskRequest, DateFieldType } from '@/types/task';
 import { Team } from '@/types/team';
 import { TaskFilters, SortField, SortOrder } from '@/components/tasks/task-filters';
 import { TaskCard } from '@/components/tasks/task-card';
@@ -38,6 +38,7 @@ export default function TasksPage() {
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchQuery, setSearchQuery] = useState('');
+  const [dateField, setDateField] = useState<DateFieldType>('createdAt');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [creatorId, setCreatorId] = useState('');
@@ -60,6 +61,7 @@ export default function TasksPage() {
         if (selectedTeamId) params.teamId = selectedTeamId;
         params.view = currentView;
         if (statusFilter !== 'all') params.status = statusFilter;
+        if (dateField) params.dateField = dateField;
         if (startDate) params.startDate = startDate;
         if (endDate) params.endDate = endDate;
         if (creatorId) params.creatorId = creatorId;
@@ -82,7 +84,7 @@ export default function TasksPage() {
     if (isAuthenticated) {
       loadTasks();
     }
-  }, [selectedTeamId, currentView, isAuthenticated, statusFilter, startDate, endDate, creatorId, assigneeId, sortField, sortOrder]);
+  }, [selectedTeamId, currentView, isAuthenticated, statusFilter, dateField, startDate, endDate, creatorId, assigneeId, sortField, sortOrder]);
 
   // Filter and sort tasks
   const filteredTasks = useMemo(() => {
@@ -214,6 +216,7 @@ export default function TasksPage() {
     setStatusFilter('all');
     setPriorityFilter('all');
     setSearchQuery('');
+    setDateField('createdAt');
     setStartDate('');
     setEndDate('');
     setCreatorId('');
@@ -433,6 +436,7 @@ export default function TasksPage() {
                   sortField={sortField}
                   sortOrder={sortOrder}
                   searchQuery={searchQuery}
+                  dateField={dateField}
                   startDate={startDate}
                   endDate={endDate}
                   creatorId={creatorId}
@@ -443,6 +447,7 @@ export default function TasksPage() {
                   onSortFieldChange={setSortField}
                   onSortOrderChange={setSortOrder}
                   onSearchChange={setSearchQuery}
+                  onDateFieldChange={setDateField}
                   onStartDateChange={setStartDate}
                   onEndDateChange={setEndDate}
                   onCreatorChange={setCreatorId}

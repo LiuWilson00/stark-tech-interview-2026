@@ -31,7 +31,7 @@ A collaborative task management application inspired by Lark Tasks, built with N
 | Layer | Technology |
 |-------|------------|
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS, Zustand |
-| Backend | NestJS, TypeORM, MySQL 8, Redis |
+| Backend | NestJS, TypeORM, MySQL 8 |
 | Auth | JWT (Access + Refresh tokens) |
 | API Docs | Swagger/OpenAPI |
 | Deployment | Docker, Docker Compose |
@@ -63,7 +63,6 @@ Services will be available at:
 | Backend API | http://localhost:3011/api |
 | Swagger Docs | http://localhost:3011/api/docs |
 | MySQL | localhost:3307 |
-| Redis | localhost:6379 |
 
 ### Stop Services
 
@@ -196,10 +195,6 @@ DATABASE_NAME=todolist
 # JWT
 JWT_SECRET=your-secret-key
 JWT_EXPIRES_IN=15m
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
 ```
 
 ### Frontend

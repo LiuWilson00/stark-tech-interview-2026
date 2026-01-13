@@ -78,12 +78,15 @@ export interface UpdateTaskRequest {
   dueDate?: string | null;
 }
 
+export type DateFieldType = 'dueDate' | 'createdAt' | 'completedAt' | 'updatedAt';
+
 export interface TaskFilterParams {
   teamId?: string;
   view?: TaskView;
   status?: TaskStatus;
   creatorId?: string;
   assigneeId?: string;
+  dateField?: DateFieldType;
   startDate?: string;
   endDate?: string;
   sortBy?: 'createdAt' | 'dueDate' | 'id';

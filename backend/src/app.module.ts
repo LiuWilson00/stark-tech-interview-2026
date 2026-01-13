@@ -15,6 +15,7 @@ import { TeamModule } from './modules/team/team.module';
 import { TaskModule } from './modules/task/task.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { HistoryModule } from './modules/history/history.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -35,7 +36,9 @@ import { HistoryModule } from './modules/history/history.module';
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.database'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get<string>('app.nodeEnv') === 'development',
+        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+        migrationsRun: true, // Auto-run migrations on startup
+        synchronize: false, // Use migrations instead
         logging: configService.get<string>('app.nodeEnv') === 'development',
         charset: 'utf8mb4',
       }),
@@ -57,6 +60,7 @@ import { HistoryModule } from './modules/history/history.module';
     TaskModule,
     CommentModule,
     HistoryModule,
+    HealthModule,
   ],
   providers: [
     // Global JWT guard

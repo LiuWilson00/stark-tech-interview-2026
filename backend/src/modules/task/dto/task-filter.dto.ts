@@ -43,12 +43,21 @@ export class TaskFilterDto extends PaginationDto {
   @IsUUID()
   assigneeId?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    enum: ['dueDate', 'createdAt', 'completedAt', 'updatedAt'],
+    default: 'createdAt',
+    description: 'Date field to filter on',
+  })
+  @IsOptional()
+  @IsIn(['dueDate', 'createdAt', 'completedAt', 'updatedAt'])
+  dateField?: 'dueDate' | 'createdAt' | 'completedAt' | 'updatedAt' = 'createdAt';
+
+  @ApiPropertyOptional({ description: 'Start date for filtering (based on dateField)' })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'End date for filtering (based on dateField)' })
   @IsOptional()
   @IsDateString()
   endDate?: string;

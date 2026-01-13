@@ -1,6 +1,6 @@
 'use client';
 
-import { TaskStatus, TaskPriority } from '@/types/task';
+import { TaskStatus, TaskPriority, DateFieldType } from '@/types/task';
 import { TeamMember } from '@/types/team';
 
 export type SortField = 'createdAt' | 'updatedAt' | 'priority' | 'dueDate' | 'title' | 'creator' | 'id';
@@ -13,6 +13,7 @@ interface TaskFiltersProps {
   sortOrder: SortOrder;
   searchQuery: string;
   // New filter props
+  dateField: DateFieldType;
   startDate: string;
   endDate: string;
   creatorId: string;
@@ -24,6 +25,7 @@ interface TaskFiltersProps {
   onSortFieldChange: (field: SortField) => void;
   onSortOrderChange: (order: SortOrder) => void;
   onSearchChange: (query: string) => void;
+  onDateFieldChange: (field: DateFieldType) => void;
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
   onCreatorChange: (creatorId: string) => void;
@@ -37,6 +39,7 @@ export function TaskFilters({
   sortField,
   sortOrder,
   searchQuery,
+  dateField,
   startDate,
   endDate,
   creatorId,
@@ -47,6 +50,7 @@ export function TaskFilters({
   onSortFieldChange,
   onSortOrderChange,
   onSearchChange,
+  onDateFieldChange,
   onStartDateChange,
   onEndDateChange,
   onCreatorChange,
@@ -158,9 +162,24 @@ export function TaskFilters({
 
       {/* Filters Row 2: Date Range */}
       <div className="flex flex-wrap gap-4 items-center">
+        {/* Date Field Selector */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600 dark:text-gray-400">Date Field:</label>
+          <select
+            value={dateField}
+            onChange={(e) => onDateFieldChange(e.target.value as DateFieldType)}
+            className="px-3 py-1.5 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          >
+            <option value="createdAt">Created Date</option>
+            <option value="dueDate">Due Date</option>
+            <option value="completedAt">Completed Date</option>
+            <option value="updatedAt">Updated Date</option>
+          </select>
+        </div>
+
         {/* Date Range */}
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600 dark:text-gray-400">Due Date:</label>
+          <label className="text-sm text-gray-600 dark:text-gray-400">Range:</label>
           <input
             type="date"
             value={startDate}

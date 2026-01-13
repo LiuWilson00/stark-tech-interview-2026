@@ -29,11 +29,15 @@ RUN npm ci --only=production
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
 
+# Copy entrypoint script
+COPY scripts/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
 # Set environment
 ENV NODE_ENV=production
 
 # Expose port
 EXPOSE 3011
 
-# Start the application
-CMD ["node", "dist/main.js"]
+# Start the application with entrypoint
+CMD ["./docker-entrypoint.sh"]

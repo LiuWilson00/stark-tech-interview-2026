@@ -144,7 +144,7 @@ export default function TaskDetailPage() {
     if (!editingCommentId || !editCommentContent.trim()) return;
     setSubmitting(true);
     try {
-      await tasksApi.updateComment(taskId, editingCommentId, { content: editCommentContent });
+      await tasksApi.updateComment(taskId, editingCommentId, editCommentContent);
       setEditingCommentId(null);
       setEditCommentContent('');
       await loadTaskData();

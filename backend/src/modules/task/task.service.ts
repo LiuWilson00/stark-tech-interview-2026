@@ -40,6 +40,7 @@ export class TaskService {
       status,
       creatorId,
       assigneeId,
+      dateField = 'createdAt',
       startDate,
       endDate,
       sortBy,
@@ -76,11 +77,11 @@ export class TaskService {
     }
 
     if (startDate) {
-      qb.andWhere('task.createdAt >= :startDate', { startDate });
+      qb.andWhere(`task.${dateField} >= :startDate`, { startDate });
     }
 
     if (endDate) {
-      qb.andWhere('task.createdAt <= :endDate', { endDate });
+      qb.andWhere(`task.${dateField} <= :endDate`, { endDate });
     }
 
     // Handle sorting
